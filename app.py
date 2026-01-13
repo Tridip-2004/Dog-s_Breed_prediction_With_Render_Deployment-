@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import os
 
 # ---------------- CONFIG ----------------
 st.set_page_config(
@@ -10,15 +11,20 @@ st.set_page_config(
     layout="centered"
 )
 
+# ---------------- PATHS ----------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "dog_breed_classifier.h5")
+CLASS_PATH = os.path.join(BASE_DIR, "class_names.txt")
+
 # ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model("C:\\Users\\tridi\\OneDrive\\Desktop\\render-deployment\\dog_breed_classifier.h5")
+    return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model()
 
-# Load class names
-with open("class_names.txt", "r") as f:
+# ---------------- LOAD CLASS NAMES ----------------
+with open(CLASS_PATH, "r") as f:
     class_names = [line.strip() for line in f.readlines()]
 
 # ---------------- IMAGE PREPROCESS ----------------
@@ -41,15 +47,16 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.image(image, caption="Uploaded Image", width=400)
 
     if st.button("Predict Breed"):
         with st.spinner("Classifying..."):
             processed_img = preprocess_image(image)
             prediction = model.predict(processed_img)
 
-            confidence = np.max(prediction) * 100
-            predicted_class = class_names[np.argmax(prediction)]
+            confidence = float(np.max(prediction) * 100)
+            predicted_class = class_names[int(np.argmax(prediction))]
 
         st.success(f"🐕 **Breed:** {predicted_class}")
         st.info(f"🔍 **Confidence:** {confidence:.2f}%")
+
